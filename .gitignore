@@ -1,8 +1,10 @@
 .gitattributes
 .gitignore
 .venv/
+.venv-mac/
 .idea/
 __pycache__/
+.pytest_cache
 
 *.sqlite3
 

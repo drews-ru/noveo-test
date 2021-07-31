@@ -2,7 +2,6 @@ import pytest
 from testservice.backend import *
 
 
-
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     'name, parameters, expected',

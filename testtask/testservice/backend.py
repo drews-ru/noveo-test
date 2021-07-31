@@ -1,4 +1,5 @@
 import json
+from pydantic import BaseModel
 from .models import Notification, Backend
 
 class GenericBackend():
@@ -6,19 +7,33 @@ class GenericBackend():
     model = Backend
     connected = False
 
+    class Settings(BaseModel):
+        pass
+
+    settings = Settings()
+
     def __init__(self, name, parameters='{}', enabled=True):
         if name == '':
             raise ValueError('Backend name must not be empty')
 
-        if self.is_valid_json(parameters):
-            self.instance, created = self.model.objects.get_or_create(name=name)
-            if created:
-                self.instance.enabled=enabled
-                self.instance.parameters=parameters
-                self.instance.save()
-            self.parameters = json.loads(self.instance.parameters)
-        else:
+        if not self.is_valid_json(parameters):
             raise ValueError('Invalid JSON specified as backend parameters')
+
+        if not self.is_valid(parameters):
+            self.help()
+            raise ValueError('Parameters are not valid for this backend. See backend help.')
+
+        self.instance, created = self.model.objects.get_or_create(name=name)
+        if created:
+            self.instance.enabled=enabled
+            self.instance.parameters=parameters
+            self.instance.save()
+        self.parameters = json.loads(self.instance.parameters)
+
+
+    def help(self):
+        """ Output backend parameters description """
+        print('This is a generic backend interface, so has no parameters')
 
 
     def is_valid_json(self, parameters):
@@ -32,8 +47,8 @@ class GenericBackend():
 
 
     def is_valid(self, parameters):
-        """ Method for basic validation backend parameters """
-        pass
+        """ Method for validation generic backend parameters """
+        return True
 
 
     def enable(self):
@@ -66,12 +81,27 @@ class GenericBackend():
             self.connect()
 
 
-
-
 class EmailBackend(GenericBackend):
     """ Email backend interface """
+
+    def is_valid(self, parameters):
+        return True
+
 
     def send(self, message):
         super().send(message)
 
 
+class LogBackend(GenericBackend):
+    """ Log backend interface """
+
+    def is_valid(self, parameters):
+        return False
+
+
+    def help(self):
+        print('Parameters for the email backend:')
+
+
+    def send(self, message):
+        super().send(message)
