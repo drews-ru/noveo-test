@@ -3,3 +3,4 @@ djangorestframework
 pytest
 pytest-django
 pydantic
+email-validator

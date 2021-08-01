@@ -15,9 +15,16 @@ class Notification(models.Model):
 # Generic backend model
 class Backend(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, null=False, verbose_name='Backend name')
+    name = models.CharField(max_length=255,
+                            null=False,
+                            verbose_name='Backend name')
+    classname = models.CharField(max_length=255,
+                                 null=False,
+                                 default='GenericBackendInterface',
+                                 verbose_name='Backend name')
     enabled = models.BooleanField(default=True)
-    parameters = models.TextField(null=False, verbose_name='Backend parameters in JSON')
+    settings = models.TextField(null=False,
+                                verbose_name='Backend parameters in JSON')
 
     def __str__(self):
-        return f'[{self.id}] {self.name}'
+        return f'[{self.id}] {self.classname}:{self.name}'

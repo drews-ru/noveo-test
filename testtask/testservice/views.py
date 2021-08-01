@@ -3,7 +3,7 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Notification
+from .models import Backend
 from .serializers import NotificationSerializer
 
 @api_view(['POST'])
@@ -16,5 +16,6 @@ def listener(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-def dispatcher():
-    pass
+def dispatcher(request):
+    backends = Backend.objects.filter(enabled=True)
+    print(backends)
