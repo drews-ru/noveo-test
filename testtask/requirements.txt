@@ -1,5 +1,7 @@
 django
 djangorestframework
+uvicorn
+whitenoise
 pytest
 pytest-django
 pydantic

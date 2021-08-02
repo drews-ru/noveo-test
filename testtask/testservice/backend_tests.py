@@ -80,8 +80,9 @@ def test_log_backend_send(tmp_path):
     message = 'test log message'
     expected = 'INFO - ' + message + '\n'
     log_file = tmp_path / 'test.log'
+    filename = str(log_file).replace('\\', '\\\\')
     l = LogBackendInterface('test_log',
-                            '{"filename":"'+str(log_file)+'", "format":"%(levelname)s - %(message)s"}')
+                            '{"filename":"'+filename+'", "format":"%(levelname)s - %(message)s"}')
     l.send(message)
     assert log_file.read_text() == expected
 
