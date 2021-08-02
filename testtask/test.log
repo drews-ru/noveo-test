@@ -1,0 +1,7 @@
+INFO - NotificationSerializer(data={'message': "it's working!"}):
+    message = CharField(allow_blank=True, label='Notification message', required=False, style={'base_template': 'textarea.html'})
+    sender = CharField(allow_null=True, label='Sender name', max_length=255, required=False)
+INFO - it's coming!
+INFO - ok
+INFO - okko
+2021-08-02 15:30:15,622 - log - INFO - game over

@@ -2,11 +2,11 @@ import json
 import logging
 from typing import Optional
 from pathlib import Path
-from pydantic import BaseModel, ValidationError, EmailStr, FilePath
-from .models import Notification, Backend
+from pydantic import BaseModel, ValidationError, EmailStr, SecretStr
+from .models import Backend
 
 
-def instatiate_backend(classname, *args, **kwargs):
+def instantiate_backend(classname, *args, **kwargs):
     constructor = globals()[classname]
     return constructor(*args, **kwargs)
 
@@ -45,7 +45,7 @@ class GenericBackendInterface():
 
     def help(self):
         """ Output backend settings description """
-        print('This is a generic backend interface, so has no settings')
+        print('This is a generic backend interface, so it has no settings')
 
 
     def is_valid_json(self, settings):
@@ -89,15 +89,16 @@ class GenericBackendInterface():
 
 
     def connect(self):
-        """ Method to connect with backend (should be overridden) """
+        """ Method to connect with backend (should be overridden if necessary) """
         # Making specific connection routine for the specific backend
         self.connected = True
 
 
     def send(self, message):
-        """ Method for sending message to backend (should be overridden) """
+        """ Method for sending message to backend """
         if not self.connected:
             self.connect()
+        return {'backend': self.__class__.__name__, 'sent': True}
 
 
 class EmailBackendInterface(GenericBackendInterface):
@@ -105,9 +106,23 @@ class EmailBackendInterface(GenericBackendInterface):
 
     class Settings(BaseModel):
         address: EmailStr
+        user: str
+        password: SecretStr
+        subject: Optional[str]
+
+    def __init__(self, *args, **kwargs):
+        super(EmailBackendInterface, self).__init__(*args, **kwargs)
+        if not self.settings.subject:
+            self.settings.subject = f'Notification email from {self.__class__.__name__}'
+
+
+    def help(self):
+        print('Settings for the email backend: address [required]')
 
     def send(self, message):
-        super(EmailBackendInterface, self).send(message)
+        result = super(EmailBackendInterface, self).send(message)
+
+        return result
 
 
 class LogBackendInterface(GenericBackendInterface):
@@ -130,8 +145,11 @@ class LogBackendInterface(GenericBackendInterface):
 
 
     def help(self):
-        print('Settings for the log backend: filename [required]')
+        print('Settings for the log backend: filename [required], format [optional]')
 
 
     def send(self, message):
+        result = super(LogBackendInterface, self).send(message)
         self.logger.info(message)
+
+        return result
