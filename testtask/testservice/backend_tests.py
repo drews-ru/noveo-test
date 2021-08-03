@@ -64,10 +64,9 @@ def test_generic_backend_same_name():
                          format='%(levelname)s - %(message)s'
                         )
                      ),
-        pytest.param('log_backend_settings_invalid',
-                     '{"file":"test.log"}',
-                     LogBackendInterface.Settings(filename='test.log'),
-                     marks=pytest.mark.xfail
+        pytest.param('log_backend_settings_valid_with_loglevel',
+                     '{"filename":"test.log", "loglevel": "debug"}',
+                     LogBackendInterface.Settings(filename='test.log', loglevel='debug')
                      ),
     ])
 def test_log_backend_settings(name, settings, expected):
@@ -78,29 +77,17 @@ def test_log_backend_settings(name, settings, expected):
 @pytest.mark.django_db
 def test_log_backend_send(tmp_path):
     message = 'test log message'
-    expected = 'INFO - ' + message + '\n'
+    expected = 'DEBUG - ' + message + '\n'
     log_file = tmp_path / 'test.log'
     filename = str(log_file).replace('\\', '\\\\')
     l = LogBackendInterface('test_log',
-                            '{"filename":"'+filename+'", "format":"%(levelname)s - %(message)s"}')
+                            '{"filename":"'+filename+'", "format":"%(levelname)s - %(message)s", "loglevel": "debug"}')
     l.send(message)
     assert log_file.read_text() == expected
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    'name, settings, expected',
-    [
-        pytest.param('email_backend_settings_valid',
-                     '{"address":"user@test.mail"}',
-                     EmailBackendInterface.Settings(address='user@test.mail')
-                     ),
-        pytest.param('email_backend_settings_invalid',
-                     '{"address":"invalid_str"}',
-                     EmailBackendInterface.Settings(address='user@test.mail'),
-                     marks=pytest.mark.xfail
-                     ),
-    ])
-def test_email_backend_settings(name, settings, expected):
-    backend = EmailBackendInterface(name, settings)
-    assert backend.settings == expected
+def test_notifications():
+    """ Any other tests """
+    pass
+

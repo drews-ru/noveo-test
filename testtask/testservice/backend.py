@@ -2,7 +2,8 @@ import json
 import logging
 from typing import Optional
 from pathlib import Path
-from pydantic import BaseModel, ValidationError, EmailStr, SecretStr
+from pydantic import BaseModel, ValidationError, EmailStr, SecretStr, constr
+from enum import Enum
 from .models import Backend
 
 
@@ -96,13 +97,17 @@ class GenericBackendInterface():
 
     def send(self, message):
         """ Method for sending message to backend """
-        if not self.connected:
-            self.connect()
-        return {'backend': self.__class__.__name__, 'sent': True}
+        if self.instance.enabled and message:
+            if not self.connected:
+                self.connect()
+            return {'backend': self.__class__.__name__, 'sent': True}
+        else:
+            return {'backend': self.__class__.__name__, 'sent': False}
+
 
 
 class EmailBackendInterface(GenericBackendInterface):
-    """ Email backend interface """
+    """ Email backend interface (not completed) """
 
     class Settings(BaseModel):
         address: EmailStr
@@ -122,34 +127,87 @@ class EmailBackendInterface(GenericBackendInterface):
     def send(self, message):
         result = super(EmailBackendInterface, self).send(message)
 
+        """ Here should be code for sending email """
+
         return result
 
 
+class TelegrambotBackendInterface(GenericBackendInterface):
+    """ Telegram bot backend interface (working) """
+    bot = None
+
+    class Settings(BaseModel):
+        token: SecretStr
+        channel: constr(regex=r'^@')
+
+    def __init__(self, *args, **kwargs):
+        super(TelegrambotBackendInterface, self).__init__(*args, **kwargs)
+        import telebot
+        try:
+            self.bot = telebot.TeleBot(self.settings.token.get_secret_value())
+        except:
+            self.connected = False
+        else:
+            self.connected = True
+
+    def help(self):
+        print('Settings for the telegram bot backend: token [required], channel [required, starts with "@"]')
+
+    def connect(self):
+        if not self.bot:
+            self.connected = False
+
+    def send(self, message):
+        result = super(TelegrambotBackendInterface, self).send(message)
+        if self.connected and result['sent']:
+            self.bot.send_message(self.settings.channel, message)
+        return result
+
+
+
+
+class LogLevelEnum(str, Enum):
+    DEBUG = 'debug'
+    INFO = 'info'
+    WARNING = 'warning'
+    ERROR = 'error'
+    CRITICAL = 'critical'
+
 class LogBackendInterface(GenericBackendInterface):
-    """ Log backend interface """
+    """ Log backend interface (working) """
+    global loggers
 
     class Settings(BaseModel):
         filename: Path
         format: Optional[str]
+        loglevel: LogLevelEnum = LogLevelEnum.INFO
 
     def __init__(self, *args, **kwargs):
         super(LogBackendInterface, self).__init__(*args, **kwargs)
         self.logger = logging.getLogger(self.instance.name)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(getattr(logging, self.settings.loglevel.upper()))
         file_handler = logging.FileHandler(self.settings.filename, encoding='utf-8')
 
         if self.settings.format:
             formatter = logging.Formatter(self.settings.format)
             file_handler.setFormatter(formatter)
+
+        if (self.logger.hasHandlers()):
+            self.logger.handlers.clear()
         self.logger.addHandler(file_handler)
 
 
     def help(self):
-        print('Settings for the log backend: filename [required], format [optional]')
+        print('Settings for the log backend: filename [required], format [optional], loglevel [optional]')
 
 
     def send(self, message):
         result = super(LogBackendInterface, self).send(message)
-        self.logger.info(message)
 
-        return result
+        try:
+            if result['sent']:
+                getattr(self.logger, self.settings.loglevel.value)(message)
+        except:
+            result['sent'] = False
+        finally:
+            return result

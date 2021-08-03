@@ -35,14 +35,17 @@ def listener(request):
     Service listening incoming messages to dispatch notifications to the registered backends
     """
     if request.method == 'POST':
+        ip = request.META.get('REMOTE_ADDR')
+        if ip:
+            request.data['sender_ip'] = ip
         serializer = NotificationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
 
             # Running background tasks
             run_tasks(serializer.data['message'])
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(instance.id, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

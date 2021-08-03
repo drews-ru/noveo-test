@@ -27,4 +27,4 @@ class Backend(models.Model):
                                 verbose_name='Backend parameters in JSON')
 
     def __str__(self):
-        return f'[{self.id}] {self.classname}:{self.name}'
+        return f'[{self.id}] {self.classname}(name={self.name})'
